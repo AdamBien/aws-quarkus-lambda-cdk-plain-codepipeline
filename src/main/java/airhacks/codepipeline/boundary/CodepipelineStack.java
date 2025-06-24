@@ -17,6 +17,8 @@ import software.amazon.awscdk.services.codepipeline.StageOptions;
 import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
 import software.amazon.awscdk.services.codepipeline.actions.CodeBuildActionType;
 import software.amazon.awscdk.services.codepipeline.actions.CodeStarConnectionsSourceAction;
+import software.amazon.awscdk.services.ssm.ParameterDataType;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 
 public class CodepipelineStack extends Stack {
@@ -26,6 +28,7 @@ public class CodepipelineStack extends Stack {
                         String codestarConnectionARN) {
                 super(scope, projectName + "-codepipeline");
                 var systemTestProjectName = projectName + "-st";
+                var parameterStoreKey = "/lambda-under-test/BASE_URI_MP_REST_URL".replace("-", "_");
                 var artifactBucket = ArtifactBucket.create(this);
                 var pipeline = Pipeline.Builder.create(this, projectName + "Pipeline")
                                 .crossAccountKeys(true)
@@ -41,8 +44,15 @@ public class CodepipelineStack extends Stack {
                 var systemTest = createCodeBuildAction(2, "system-test", testProject,
                                 Map.of("BASE_URI_MP_REST_URL", BuildEnvironmentVariable.builder()
                                                 .type(BuildEnvironmentVariableType.PARAMETER_STORE)
-                                                .value("%s/BASE_URI_MP_REST_URL".formatted(systemTestProjectName))
+                                                .value(parameterStoreKey)
                                                 .build()));
+                var parameter = StringParameter.Builder.create(this, "LambdaURIParameter")
+                                .parameterName(parameterStoreKey)
+                                .description("this base domain is used in the STs to access the service")
+                                .dataType(ParameterDataType.TEXT)
+                                .stringValue("set the generated FunctionURL dns")
+                                .build();
+                parameter.grantRead(testProject);
                 var actions = List.of(build, systemTest);
                 pipeline.addStage(createStage("build-and-deploy", actions));
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();

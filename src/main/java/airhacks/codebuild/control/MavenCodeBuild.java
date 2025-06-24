@@ -47,14 +47,8 @@ public interface MavenCodeBuild {
         }
 
         public static PipelineProject createSystemTestProject(Construct scope, String projectName) {
-                var stack = software.amazon.awscdk.Stack.of(scope);
-                var ssmPolicyStatement = PolicyStatement.Builder.create()
-                                .effect(Effect.ALLOW)
-                                .actions(List.of("ssm:GetParameters", "ssm:GetParameter"))
-                                .resources(List.of("arn:aws:ssm:%s:%s:parameter/*".formatted(stack.getRegion(),stack.getAccount())))
-                                .build();
 
-                var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
+                return PipelineProject.Builder.create(scope, projectName + "PipelineProject")
                                 .cache(Cache.none())
                                 .projectName(projectName)
                                 .buildSpec(ST_SPEC_NAME)
@@ -64,9 +58,6 @@ public interface MavenCodeBuild {
                                                 .buildImage(BUILD_IMAGE)
                                                 .build())
                                 .build();
-                var systemTestRole = pipelineProject.getRole();
-                systemTestRole.addToPrincipalPolicy(ssmPolicyStatement);
-                return pipelineProject;
         }
 
         static PolicyStatement allowAssumingCDKRole() {
