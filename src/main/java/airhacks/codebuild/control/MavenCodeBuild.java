@@ -9,6 +9,7 @@ import software.amazon.awscdk.services.codebuild.CloudWatchLoggingOptions;
 import software.amazon.awscdk.services.codebuild.ComputeType;
 import software.amazon.awscdk.services.codebuild.IBuildImage;
 import software.amazon.awscdk.services.codebuild.LinuxArmBuildImage;
+import software.amazon.awscdk.services.codebuild.LinuxBuildImage;
 import software.amazon.awscdk.services.codebuild.LoggingOptions;
 import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.iam.Effect;
@@ -20,7 +21,7 @@ import software.constructs.Construct;
 
 public interface MavenCodeBuild{
     // aws codebuild list-curated-environment-images
-    static IBuildImage BUILD_IMAGE = LinuxArmBuildImage.fromCodeBuildImageId("aws/codebuild/amazonlinux2-aarch64-standard:3.0-24.10.29");    
+    static IBuildImage BUILD_IMAGE = LinuxBuildImage.STANDARD_7_0;
     static ComputeType COMPUTE_TYPE = ComputeType.SMALL;
 
 
