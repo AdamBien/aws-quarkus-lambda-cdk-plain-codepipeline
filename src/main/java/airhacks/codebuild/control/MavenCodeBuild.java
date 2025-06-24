@@ -31,7 +31,7 @@ public interface MavenCodeBuild {
                                 .cache(Cache.none())
                                 .buildSpec(BUILD_SPEC)
                                 .projectName(projectName)
-                                .logging(getLoggingOptions(scope, projectName))
+                                .logging(getBuildLoggingOptions(scope, projectName))
                                 .environment(BuildEnvironment.builder()
                                                 .computeType(COMPUTE_TYPE)
                                                 .buildImage(BUILD_IMAGE)
@@ -50,7 +50,7 @@ public interface MavenCodeBuild {
                                 .cache(Cache.none())
                                 .projectName(projectName)
                                 .buildSpec(ST_SPEC_NAME)
-                                .logging(getLoggingOptions(scope, projectName))
+                                .logging(getSystemTestLoggingOptions(scope, projectName))
                                 .environment(BuildEnvironment.builder()
                                                 .computeType(COMPUTE_TYPE)
                                                 .buildImage(BUILD_IMAGE)
@@ -67,8 +67,20 @@ public interface MavenCodeBuild {
                                 .build();
         }
 
-        static LoggingOptions getLoggingOptions(Construct scope, String projectName) {
+        static LoggingOptions getBuildLoggingOptions(Construct scope, String projectName) {
                 var logGroup = LogGroup.Builder.create(scope, "CodbuildLogGroup")
+                                .logGroupName("/codebuild/" + projectName)
+                                .retention(RetentionDays.FIVE_DAYS).build();
+                return LoggingOptions.builder()
+                                .cloudWatch(CloudWatchLoggingOptions.builder()
+                                                .logGroup(logGroup)
+                                                .enabled(true)
+                                                .build())
+                                .build();
+        }
+
+        static LoggingOptions getSystemTestLoggingOptions(Construct scope, String projectName) {
+                var logGroup = LogGroup.Builder.create(scope, "CodebuildLogGroupST")
                                 .logGroupName("/codebuild/" + projectName)
                                 .retention(RetentionDays.FIVE_DAYS).build();
                 return LoggingOptions.builder()
