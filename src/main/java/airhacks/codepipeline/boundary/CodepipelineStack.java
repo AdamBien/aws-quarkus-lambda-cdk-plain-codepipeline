@@ -1,11 +1,14 @@
 package airhacks.codepipeline.boundary;
 
 import java.util.List;
+import java.util.Map;
 
 import airhacks.codebuild.control.MavenCodeBuild;
 import airhacks.s3.control.ArtifactBucket;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Stack;
+import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
+import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariableType;
 import software.amazon.awscdk.services.codebuild.IProject;
 import software.amazon.awscdk.services.codepipeline.Artifact;
 import software.amazon.awscdk.services.codepipeline.IAction;
@@ -34,9 +37,13 @@ public class CodepipelineStack extends Stack {
                 var buildProject = MavenCodeBuild.createBuildProject(this, artifactBucket, projectName);
                 var testProject = MavenCodeBuild.createSystemTestProject(this, systemTestProjectName);
 
-                var build = createCodeBuildAction(1,"build", buildProject);
-                var systemTest = createCodeBuildAction(2,"system-test", testProject); 
-                var actions = List.of(build,systemTest);
+                var build = createCodeBuildAction(1, "build", buildProject);
+                var systemTest = createCodeBuildAction(2, "system-test", testProject,
+                                Map.of("BASE_URI_MP_REST_URL", BuildEnvironmentVariable.builder()
+                                                .type(BuildEnvironmentVariableType.PARAMETER_STORE)
+                                                .value("%s/BASE_URI_MP_REST_URL".formatted(systemTestProjectName))
+                                                .build()));
+                var actions = List.of(build, systemTest);
                 pipeline.addStage(createStage("build-and-deploy", actions));
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
         }
@@ -60,13 +67,19 @@ public class CodepipelineStack extends Stack {
                                 .build();
         }
 
-        CodeBuildAction createCodeBuildAction(int runOrder,String actionName, IProject project) {
+        CodeBuildAction createCodeBuildAction(int runOrder, String actionName, IProject project,
+                        Map<String, BuildEnvironmentVariable> configuration) {
                 return CodeBuildAction.Builder.create()
                                 .project(project)
                                 .runOrder(runOrder)
                                 .actionName(actionName)
                                 .input(SOURCE_OUTPUT)
+                                .environmentVariables(configuration)
                                 .type(CodeBuildActionType.BUILD)
                                 .build();
+        }
+
+        CodeBuildAction createCodeBuildAction(int runOrder, String actionName, IProject project) {
+                return createCodeBuildAction(runOrder, actionName, project, Map.of());
         }
 }
