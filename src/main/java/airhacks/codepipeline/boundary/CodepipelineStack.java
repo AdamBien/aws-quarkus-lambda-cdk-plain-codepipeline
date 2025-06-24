@@ -34,9 +34,9 @@ public class CodepipelineStack extends Stack {
                 var buildProject = MavenCodeBuild.createBuildProject(this, artifactBucket, projectName);
                 var testProject = MavenCodeBuild.createSystemTestProject(this, systemTestProjectName);
 
-                var actions = List.of(
-                                createCodeBuildAction("build", buildProject),
-                                createCodeBuildAction("system-test", testProject));
+                var build = createCodeBuildAction(1,"build", buildProject);
+                var systemTest = createCodeBuildAction(2,"system-test", testProject); 
+                var actions = List.of(build,systemTest);
                 pipeline.addStage(createStage("build-and-deploy", actions));
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
         }
@@ -60,9 +60,10 @@ public class CodepipelineStack extends Stack {
                                 .build();
         }
 
-        CodeBuildAction createCodeBuildAction(String actionName, IProject project) {
+        CodeBuildAction createCodeBuildAction(int runOrder,String actionName, IProject project) {
                 return CodeBuildAction.Builder.create()
                                 .project(project)
+                                .runOrder(runOrder)
                                 .actionName(actionName)
                                 .input(SOURCE_OUTPUT)
                                 .type(CodeBuildActionType.BUILD)
