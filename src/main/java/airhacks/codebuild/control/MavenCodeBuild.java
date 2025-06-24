@@ -24,7 +24,7 @@ public interface MavenCodeBuild {
         IBuildImage BUILD_IMAGE = LinuxBuildImage.STANDARD_7_0;
         ComputeType COMPUTE_TYPE = ComputeType.SMALL;
         BuildSpec BUILD_SPEC = BuildSpec.fromSourceFilename("buildspec.yml");
-        BuildSpec ST_SPEC_NAME = BuildSpec.fromSourceFilename("stspec");
+        BuildSpec ST_SPEC_NAME = BuildSpec.fromSourceFilename("stspec.yml");
 
         public static PipelineProject createBuildProject(Construct scope, IBucket bucket, String projectName) {
                 var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
