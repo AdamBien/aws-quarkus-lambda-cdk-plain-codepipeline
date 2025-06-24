@@ -19,7 +19,7 @@ import software.constructs.Construct;
 public class CodepipelineStack extends Stack {
     static Artifact SOURCE_OUTPUT = Artifact.artifact("source");
 
-    public CodepipelineStack(Construct scope, String projectName, String codestarConnectionARN) {
+    public CodepipelineStack(Construct scope, GithubConfiguration configuration, String projectName, String codestarConnectionARN) {
         super(scope, projectName + "-codepipeline");
         var artifactBucket = ArtifactBucket.create(this);
         var buildProject = MavenCodeBuild.createPipelineProject(this, artifactBucket, projectName);
@@ -28,11 +28,8 @@ public class CodepipelineStack extends Stack {
                 .artifactBucket(artifactBucket)
                 .pipelineName(projectName)
                 .build();
-        var owner = "AdamBien";
-        var repository = "aws-quarkus-lambda-cdk-plain";
-        var branch = "main";
         pipeline.addStage(createStage("github-checkout",
-                List.of(createGithubConnection(codestarConnectionARN, owner, repository, branch))));
+                List.of(createGithubConnection(codestarConnectionARN,configuration))));
         pipeline.addStage(createStage("build-and-deploy", List.of(createCodeBuildAction(projectName,buildProject))));
         CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
     }
@@ -44,13 +41,12 @@ public class CodepipelineStack extends Stack {
                 .build();
     }
 
-    CodeStarConnectionsSourceAction createGithubConnection(String codestarConnectionARN, String owner,
-            String repository, String branchName) {
+    CodeStarConnectionsSourceAction createGithubConnection(String codestarConnectionARN, GithubConfiguration configuration) {
         return CodeStarConnectionsSourceAction.Builder.create()
                 .actionName("checkout-from-github")
-                .branch(branchName)
-                .repo(repository)
-                .owner(owner)
+                .branch(configuration.branch())
+                .repo(configuration.repository())
+                .owner(configuration.owner())
                 .output(SOURCE_OUTPUT)
                 .connectionArn(codestarConnectionARN)
                 .build();

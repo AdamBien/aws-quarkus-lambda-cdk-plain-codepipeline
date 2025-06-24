@@ -1,6 +1,7 @@
 package airhacks;
 
 import airhacks.codepipeline.boundary.CodepipelineStack;
+import airhacks.codepipeline.boundary.GithubConfiguration;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Tags;
 
@@ -21,7 +22,12 @@ public class CDKApp {
             return;
         }
         var configuration = optionalConfiguration.get();
-        new CodepipelineStack(app, appName, configuration.codeStarConnectionARN);
+        
+        var owner = "AdamBien";
+        var repository = "aws-quarkus-lambda-cdk-plain";
+        var branch = "main";
+        var githubConfiguration = new GithubConfiguration(owner, repository, branch);
+        new CodepipelineStack(app, githubConfiguration,appName, configuration.codeStarConnectionARN);
         app.synth();
     }
 }
