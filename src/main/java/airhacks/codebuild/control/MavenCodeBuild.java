@@ -25,7 +25,7 @@ public interface MavenCodeBuild{
     static ComputeType COMPUTE_TYPE = ComputeType.SMALL;
 
 
-    public static PipelineProject createPipelineProject(Construct scope, IBucket bucket,String projectName) {
+    public static PipelineProject createBuildProject(Construct scope, IBucket bucket,String projectName) {
         var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
                 .cache(Cache.none())
                 .projectName(projectName)
@@ -40,6 +40,18 @@ public interface MavenCodeBuild{
         pipelineRole.addToPrincipalPolicy(policyStatement);
         bucket.grantReadWrite(pipelineRole);
         CfnOutput.Builder.create(scope, "RoleARN").value(pipelineRole.getRoleArn()).build();
+        return pipelineProject;
+    }
+    public static PipelineProject createSystemTestProject(Construct scope,String projectName) {
+        var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
+                .cache(Cache.none())
+                .projectName(projectName)
+                .logging(getLoggingOptions(scope,projectName))
+                .environment(BuildEnvironment.builder()
+                        .computeType(COMPUTE_TYPE)                       
+                        .buildImage(BUILD_IMAGE)
+                        .build())
+                .build();
         return pipelineProject;
     }
 
