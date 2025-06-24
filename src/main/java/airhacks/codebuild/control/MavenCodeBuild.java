@@ -47,6 +47,12 @@ public interface MavenCodeBuild {
         }
 
         public static PipelineProject createSystemTestProject(Construct scope, String projectName) {
+                var ssmPolicyStatement = PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of("ssm:GetParameters", "ssm:GetParameter"))
+                                .resources(List.of("arn:aws:ssm:*:*:parameter/" + projectName + "/*"))
+                                .build();
+
                 var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
                                 .cache(Cache.none())
                                 .projectName(projectName)
@@ -57,6 +63,8 @@ public interface MavenCodeBuild {
                                                 .buildImage(BUILD_IMAGE)
                                                 .build())
                                 .build();
+                var systemTestRole = pipelineProject.getRole();
+                systemTestRole.addToPrincipalPolicy(ssmPolicyStatement);
                 return pipelineProject;
         }
 
