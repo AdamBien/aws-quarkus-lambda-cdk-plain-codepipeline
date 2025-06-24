@@ -47,10 +47,11 @@ public interface MavenCodeBuild {
         }
 
         public static PipelineProject createSystemTestProject(Construct scope, String projectName) {
+                var stack = software.amazon.awscdk.Stack.of(scope);
                 var ssmPolicyStatement = PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
                                 .actions(List.of("ssm:GetParameters", "ssm:GetParameter"))
-                                .resources(List.of("arn:aws:ssm:*:*:parameter/" + projectName + "/*"))
+                                .resources(List.of("arn:aws:ssm:%s:%s:parameter/*".formatted(stack.getRegion(),stack.getAccount())))
                                 .build();
 
                 var pipelineProject = PipelineProject.Builder.create(scope, projectName + "PipelineProject")
