@@ -13,10 +13,10 @@ import jakarta.json.bind.JsonbException;
 
 public class Configuration {
     
-    //useful e.g. for vpc lookups
     public String codeStarConnectionARN = "notset";
-    //public String accountID;
-    //public String region;
+    public String owner = "notset";
+    public String repository = "notset";
+    public String branch = "notset";
 
 
 
