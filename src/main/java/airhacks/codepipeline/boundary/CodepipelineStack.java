@@ -3,6 +3,7 @@ package airhacks.codepipeline.boundary;
 import java.util.List;
 import java.util.Map;
 
+import airhacks.cloudwatch.control.LogGroups;
 import airhacks.codebuild.control.MavenCodeBuild;
 import airhacks.s3.control.ArtifactBucket;
 import software.amazon.awscdk.CfnOutput;
@@ -10,6 +11,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariableType;
 import software.amazon.awscdk.services.codebuild.IProject;
+import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.codepipeline.Artifact;
 import software.amazon.awscdk.services.codepipeline.IAction;
 import software.amazon.awscdk.services.codepipeline.Pipeline;
@@ -17,6 +19,7 @@ import software.amazon.awscdk.services.codepipeline.StageOptions;
 import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
 import software.amazon.awscdk.services.codepipeline.actions.CodeBuildActionType;
 import software.amazon.awscdk.services.codepipeline.actions.CodeStarConnectionsSourceAction;
+import software.amazon.awscdk.services.events.OnEventOptions;
 import software.amazon.awscdk.services.ssm.ParameterDataType;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
@@ -39,7 +42,7 @@ public class CodepipelineStack extends Stack {
                                 List.of(createGithubConnection(codestarConnectionARN, configuration))));
                 var buildProject = MavenCodeBuild.createBuildProject(this, artifactBucket, projectName);
                 var testProject = MavenCodeBuild.createSystemTestProject(this, systemTestProjectName);
-
+                setupNotifications(testProject);
                 var build = createCodeBuildAction(1, "build", buildProject);
                 var systemTest = createCodeBuildAction(2, "system-test", testProject,
                                 Map.of("BASE_URI_MP_REST_URL", BuildEnvironmentVariable.builder()
@@ -56,6 +59,15 @@ public class CodepipelineStack extends Stack {
                 var actions = List.of(build, systemTest);
                 pipeline.addStage(createStage("build-and-deploy", actions));
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
+        }
+
+        void setupNotifications(PipelineProject pipelineProject){
+                var logGroupTarget = LogGroups.successfulBuils(this);
+                pipelineProject.onBuildSucceeded("on-success", OnEventOptions.builder()
+                .target(logGroupTarget)
+                .ruleName("on-system-test-success")
+                .description("logs successful builds")
+                .build());
         }
 
         StageOptions createStage(String stageName, List<? extends IAction> actions) {
