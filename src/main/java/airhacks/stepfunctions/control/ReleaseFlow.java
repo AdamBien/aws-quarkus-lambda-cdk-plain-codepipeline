@@ -43,15 +43,15 @@ public interface ReleaseFlow {
     static DefinitionBody releaseFlow(Construct scope) {
         var first = Pass.Builder.create(scope, "ExtractProjectName")
                 .assign(Map.of(
-                        "projectName", "{% $state.detail.`project-name` %}",
-                        "buildStartTime", "{% $state.detail.`build-start-time` %}"))
+                        "projectName", "{% $states.input.detail.`project-name` %}",
+                        "buildStartTime", "{% $states.input.detail.`build-start-time` %}"))
                 .build();
         var second = CallAwsService.Builder.create(scope, "WriteLog")
                 .service("logs")
                 .action("putLogEvents")
                 .parameters(Map.of(
                         "logGroupName", "/airhacks/successful-builds",
-                        "logStreamName", "{% 'release-' & $state.projectName %}",
+                        "logStreamName", "{% 'release-' & $st   ate.projectName %}",
                         "logEvents", Map.of(
                                 "timestamp", "{% $millis() %}",
                                 "message",
@@ -62,6 +62,5 @@ public interface ReleaseFlow {
                 .start(first)
                 .next(second);
         return DefinitionBody.fromChainable(chain);
-
     }
 }
