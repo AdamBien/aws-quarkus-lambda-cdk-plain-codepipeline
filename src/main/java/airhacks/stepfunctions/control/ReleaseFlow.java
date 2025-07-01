@@ -19,51 +19,54 @@ import software.constructs.Construct;
 
 public interface ReleaseFlow {
 
-    static SfnStateMachine create(Construct scope) {
-        var logGroup = LogGroups.stepMachineExecution(scope);
-        var successfulBuilds = LogGroups.successfulBuilds(scope);
-        var stateMachine = StateMachine.Builder.create(scope, "ReleaseFlowMachine")
-                .stateMachineName("ReleaseFlow")
-                .queryLanguage(QueryLanguage.JSONATA)
-                .definitionBody(releaseFlow(scope,successfulBuilds))
-                .definitionSubstitutions(Map.of("stage", "integration"))
-                .logs(LogOptions.builder()
-                        .destination(logGroup)
-                        .level(LogLevel.ALL)
-                        .includeExecutionData(true)
-                        .build())
-                .timeout(Duration.hours(24))
-                .build();
-        successfulBuilds.grantWrite(stateMachine);
-        return SfnStateMachine.Builder.create(stateMachine)
-                .build();
-    }
+        static SfnStateMachine create(Construct scope) {
+                var logGroup = LogGroups.stepMachineExecution(scope);
+                var successfulBuilds = LogGroups.successfulBuilds(scope);
+                var stateMachine = StateMachine.Builder.create(scope, "ReleaseFlowMachine")
+                                .stateMachineName("ReleaseFlow")
+                                .queryLanguage(QueryLanguage.JSONATA)
+                                .definitionBody(releaseFlow(scope, successfulBuilds))
+                                .definitionSubstitutions(Map.of("stage", "integration"))
+                                .logs(LogOptions.builder()
+                                                .destination(logGroup)
+                                                .level(LogLevel.ALL)
+                                                .includeExecutionData(true)
+                                                .build())
+                                .timeout(Duration.hours(24))
+                                .build();
+                successfulBuilds.grantWrite(stateMachine);
+                return SfnStateMachine.Builder.create(stateMachine)
+                                .build();
+        }
 
-    static DefinitionBody releaseFlow(Construct scope,LogGroup successfulBuilds) {
-        var first = Pass.Builder.create(scope, "ExtractProjectName")
-                .assign(Map.of(
-                        "projectName", "{% $states.input.detail.`project-name` %}",
-                        "buildStartTime", "{% $states.input.detail.`additional-information`.`build-start-time` %}",
-                        "buildNumber","{% $states.input.detail.`additional-information`.`build-number` %}"))
-                .build();
-        var logMessage = "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}";
-        
-        var second = CallAwsService.Builder.create(scope, "WriteLog")
-                .service("logs")
-                .action("putLogEvents")
-                .iamResources(List.of("arn:aws:logs:*:*:log-group:/airhacks/successful-builds:*"))
-                .parameters(Map.of(
-                        "LogGroupName", "/airhacks/successful-builds",
-                        "LogStreamName", "{% 'release-' & $state.projectName %}",
-                        "LogEvents", List.of(
-                                "Timestamp", "{% $millis() %}",
-                                "Message",
-                                logMessage)))
-                .build();       
+        static DefinitionBody releaseFlow(Construct scope, LogGroup successfulBuilds) {
+                var first = Pass.Builder.create(scope, "ExtractProjectName")
+                                .assign(Map.of(
+                                                "projectName", "{% $states.input.detail.`project-name` %}",
+                                                "buildStartTime",
+                                                "{% $states.input.detail.`additional-information`.`build-start-time` %}",
+                                                "buildNumber",
+                                                "{% $states.input.detail.`additional-information`.`build-number` %}"))
+                                .build();
+                var logMessage = "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}";
 
-        var chain = Chain
-                .start(first)
-                .next(second);
-        return DefinitionBody.fromChainable(chain);
-    }
+                var second = CallAwsService.Builder.create(scope, "WriteLog")
+                                .service("cloudwatchlogs")
+                                .action("putLogEvents")
+                                .iamResources(List.of("arn:aws:logs:*:*:log-group:/airhacks/successful-builds:*"))
+                                .parameters(Map.of(
+                                                "LogGroupName", "/airhacks/successful-builds",
+                                                "LogStreamName", "{% 'release-' & $state.projectName %}",
+                                                "LogEvents", List.of(
+                                                                Map.of(
+                                                                                "timestamp", "{% $millis() %}",
+                                                                                "message",
+                                                                                logMessage))))
+                                .build();
+
+                var chain = Chain
+                                .start(first)
+                                .next(second);
+                return DefinitionBody.fromChainable(chain);
+        }
 }
