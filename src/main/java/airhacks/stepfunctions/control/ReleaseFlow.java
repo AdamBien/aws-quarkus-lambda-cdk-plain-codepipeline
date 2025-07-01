@@ -7,11 +7,8 @@ import airhacks.cloudwatch.control.LogGroups;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.events.targets.SfnStateMachine;
 import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.stepfunctions.Activity;
 import software.amazon.awscdk.services.stepfunctions.Chain;
 import software.amazon.awscdk.services.stepfunctions.DefinitionBody;
-import software.amazon.awscdk.services.stepfunctions.IChainable;
-import software.amazon.awscdk.services.stepfunctions.IStateMachine;
 import software.amazon.awscdk.services.stepfunctions.LogLevel;
 import software.amazon.awscdk.services.stepfunctions.LogOptions;
 import software.amazon.awscdk.services.stepfunctions.Pass;
@@ -50,18 +47,19 @@ public interface ReleaseFlow {
                         "buildNumber","{% $states.input.detail.`additional-information`.`build-number` %}"))
                 .build();
         var logMessage = "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}";
+        
         var second = CallAwsService.Builder.create(scope, "WriteLog")
                 .service("logs")
                 .action("putLogEvents")
-                .iamResources(List.of(successfulBuilds.getLogGroupArn()))
+                .iamResources(List.of("arn:aws:logs:*:*:log-group:/airhacks/successful-builds:*"))
                 .parameters(Map.of(
                         "LogGroupName", "/airhacks/successful-builds",
                         "LogStreamName", "{% 'release-' & $state.projectName %}",
-                        "LogEvents", Map.of(
+                        "LogEvents", List.of(
                                 "Timestamp", "{% $millis() %}",
                                 "Message",
                                 logMessage)))
-                .build();
+                .build();       
 
         var chain = Chain
                 .start(first)

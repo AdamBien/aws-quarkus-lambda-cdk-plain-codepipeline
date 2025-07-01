@@ -118,6 +118,7 @@ public class CodepipelineStack extends Stack {
         static StackProps stackProps(String accountId) {
                 var env = Environment.builder()
                                 .account(accountId)
+                                .region("eu-central-1")
                                 .build();
                 return StackProps.builder()
                                 .env(env)
