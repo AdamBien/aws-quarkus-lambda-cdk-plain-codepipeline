@@ -1,10 +1,12 @@
 package airhacks.stepfunctions.control;
 
+import java.util.List;
 import java.util.Map;
 
 import airhacks.cloudwatch.control.LogGroups;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.events.targets.SfnStateMachine;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.stepfunctions.Activity;
 import software.amazon.awscdk.services.stepfunctions.Chain;
 import software.amazon.awscdk.services.stepfunctions.DefinitionBody;
@@ -26,7 +28,7 @@ public interface ReleaseFlow {
         var stateMachine = StateMachine.Builder.create(scope, "ReleaseFlowMachine")
                 .stateMachineName("ReleaseFlow")
                 .queryLanguage(QueryLanguage.JSONATA)
-                .definitionBody(releaseFlow(scope))
+                .definitionBody(releaseFlow(scope,successfulBuilds))
                 .definitionSubstitutions(Map.of("stage", "integration"))
                 .logs(LogOptions.builder()
                         .destination(logGroup)
@@ -40,7 +42,7 @@ public interface ReleaseFlow {
                 .build();
     }
 
-    static DefinitionBody releaseFlow(Construct scope) {
+    static DefinitionBody releaseFlow(Construct scope,LogGroup successfulBuilds) {
         var first = Pass.Builder.create(scope, "ExtractProjectName")
                 .assign(Map.of(
                         "projectName", "{% $states.input.detail.`project-name` %}",
@@ -51,12 +53,13 @@ public interface ReleaseFlow {
         var second = CallAwsService.Builder.create(scope, "WriteLog")
                 .service("logs")
                 .action("putLogEvents")
+                .iamResources(List.of(successfulBuilds.getLogGroupArn()))
                 .parameters(Map.of(
-                        "logGroupName", "/airhacks/successful-builds",
-                        "logStreamName", "{% 'release-' & $st   ate.projectName %}",
-                        "logEvents", Map.of(
-                                "timestamp", "{% $millis() %}",
-                                "message",
+                        "LogGroupName", "/airhacks/successful-builds",
+                        "LogStreamName", "{% 'release-' & $state.projectName %}",
+                        "LogEvents", Map.of(
+                                "Timestamp", "{% $millis() %}",
+                                "Message",
                                 logMessage)))
                 .build();
 
