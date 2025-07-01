@@ -6,6 +6,7 @@ import java.util.Map;
 import airhacks.cloudwatch.control.LogGroups;
 import airhacks.codebuild.control.MavenCodeBuild;
 import airhacks.s3.control.ArtifactBucket;
+import airhacks.stepfunctions.control.ReleaseFlow;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
@@ -63,11 +64,17 @@ public class CodepipelineStack extends Stack {
 
         void registerEventListener(PipelineProject pipelineProject) {
                 var logGroupTarget = LogGroups.completedBuildsTarget(this);
+                var releaseFlow = ReleaseFlow.create(this);
                 pipelineProject.onPhaseChange("on-change", OnEventOptions.builder()
                                 .target(logGroupTarget)
                                 .ruleName("on-build-phase-change")
                                 .description("completed builds")
                                 .build());
+                pipelineProject.onBuildSucceeded("on-success", OnEventOptions.builder()
+                .target(releaseFlow)
+                .ruleName("on-build-successful")
+                .description("invokes step functions after successful tests")
+                .build());
         }
 
         StageOptions createStage(String stageName, List<? extends IAction> actions) {
