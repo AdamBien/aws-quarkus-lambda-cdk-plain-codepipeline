@@ -50,7 +50,7 @@ public interface ReleaseFlow {
                                                 "logStreamName",
                                                 "{% 'release-' & $states.input.detail.`project-name` & '-' & $string($millis()) %}"))
                                 .build();
-                var logMessage = "{% 'Project: ' & $states.input.projectName & ', Build Start: ' & $states.input.buildStartTime %}";
+                var logMessage = "{% 'Project: ' & $projectName & ', Build Number: ' & $buildNumber & ', Build Start: ' & $buildStartTime %}";
 
                 var createStream = CallAwsService.Builder.create(scope, "CreateLogStream")
                                 .service("cloudwatchlogs")
@@ -58,7 +58,7 @@ public interface ReleaseFlow {
                                 .iamResources(List.of(successfulBuilds.getLogGroupArn()))
                                 .parameters(Map.of(
                                                 "LogGroupName", "/airhacks/successful-builds",
-                                                "LogStreamName", "{% $states.input.logStreamName %}"))
+                                                "LogStreamName", "{% $logStreamName %}"))
                                 .build();
                 var writeLog = CallAwsService.Builder.create(scope, "WriteLog")
                                 .service("cloudwatchlogs")
@@ -66,7 +66,7 @@ public interface ReleaseFlow {
                                 .iamResources(List.of(successfulBuilds.getLogGroupArn()))
                                 .parameters(Map.of(
                                                 "LogGroupName", "/airhacks/successful-builds",
-                                                "LogStreamName", "{% $states.input.logStreamName %}",
+                                                "LogStreamName", "{% $logStreamName %}",
                                                 "LogEvents", List.of(
                                                                 Map.of(
                                                                                 "Timestamp", "{% $millis() %}",
