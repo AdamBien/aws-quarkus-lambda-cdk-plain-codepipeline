@@ -7,10 +7,10 @@ import software.constructs.Construct;
 
 public interface LogGroups {
     
-    static CloudWatchLogGroup successfulBuils(Construct scope){
-        var logGroup = LogGroup.Builder.create(scope,"SuccessfulBuilds")
+    static CloudWatchLogGroup completedBuilds(Construct scope){
+        var logGroup = LogGroup.Builder.create(scope,"CompletedBuilds")
                 .retention(RetentionDays.FIVE_DAYS)
-                .logGroupName("/airhacks/successful-builds")
+                .logGroupName("/airhacks/completed-builds")
                 .build();
         return new CloudWatchLogGroup(logGroup);
     }

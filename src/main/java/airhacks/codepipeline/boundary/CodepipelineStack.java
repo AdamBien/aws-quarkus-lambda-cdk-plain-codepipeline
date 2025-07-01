@@ -61,13 +61,13 @@ public class CodepipelineStack extends Stack {
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
         }
 
-        void setupNotifications(PipelineProject pipelineProject){
-                var logGroupTarget = LogGroups.successfulBuils(this);
-                pipelineProject.onBuildSucceeded("on-success", OnEventOptions.builder()
-                .target(logGroupTarget)
-                .ruleName("on-system-test-success")
-                .description("logs successful builds")
-                .build());
+        void setupNotifications(PipelineProject pipelineProject) {
+                var logGroupTarget = LogGroups.completedBuilds(this);
+                pipelineProject.onPhaseChange("on-change", OnEventOptions.builder()
+                                .target(logGroupTarget)
+                                .ruleName("on-build-phase-change")
+                                .description("completed builds")
+                                .build());
         }
 
         StageOptions createStage(String stageName, List<? extends IAction> actions) {
