@@ -21,4 +21,11 @@ public interface LogGroups {
                 .logGroupName("/airhacks/step-functions")
                 .build();
     }
+
+    static LogGroup successfulBuilds(Construct scope){
+        return LogGroup.Builder.create(scope,"SuccessfulBuilds")
+                .retention(RetentionDays.FIVE_DAYS)
+                .logGroupName("/airhacks/successful-builds")
+                .build();
+    }
 }

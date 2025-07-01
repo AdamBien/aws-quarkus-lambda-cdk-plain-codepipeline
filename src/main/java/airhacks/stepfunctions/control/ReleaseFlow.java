@@ -15,13 +15,15 @@ import software.amazon.awscdk.services.stepfunctions.LogOptions;
 import software.amazon.awscdk.services.stepfunctions.Pass;
 import software.amazon.awscdk.services.stepfunctions.QueryLanguage;
 import software.amazon.awscdk.services.stepfunctions.StateMachine;
+import software.amazon.awscdk.services.stepfunctions.tasks.CallAwsService;
 import software.constructs.Construct;
 
 public interface ReleaseFlow {
 
     static SfnStateMachine create(Construct scope) {
         var logGroup = LogGroups.stepMachineExecution(scope);
-        IStateMachine stateMachine = StateMachine.Builder.create(scope, "ReleaseFlowMachine")
+        var successfulBuilds = LogGroups.successfulBuilds(scope);
+        var stateMachine = StateMachine.Builder.create(scope, "ReleaseFlowMachine")
                 .stateMachineName("ReleaseFlow")
                 .queryLanguage(QueryLanguage.JSONATA)
                 .definitionBody(releaseFlow(scope))
@@ -33,6 +35,7 @@ public interface ReleaseFlow {
                         .build())
                 .timeout(Duration.hours(24))
                 .build();
+        successfulBuilds.grantWrite(stateMachine);
         return SfnStateMachine.Builder.create(stateMachine)
                 .build();
     }
@@ -43,9 +46,18 @@ public interface ReleaseFlow {
                         "projectName", "{% $state.detail.`project-name` %}",
                         "buildStartTime", "{% $state.detail.`build-start-time` %}"))
                 .build();
-        var second = Pass.Builder
-                .create(scope, "WriteLog")
+        var second = CallAwsService.Builder.create(scope, "WriteLog")
+                .service("logs")
+                .action("putLogEvents")
+                .parameters(Map.of(
+                        "logGroupName", "/airhacks/successful-builds",
+                        "logStreamName", "{% 'release-' & $state.projectName %}",
+                        "logEvents", Map.of(
+                                "timestamp", "{% $millis() %}",
+                                "message",
+                                "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}")))
                 .build();
+
         var chain = Chain
                 .start(first)
                 .next(second);
