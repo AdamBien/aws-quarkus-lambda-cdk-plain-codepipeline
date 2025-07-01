@@ -42,7 +42,7 @@ public class CodepipelineStack extends Stack {
                                 List.of(createGithubConnection(codestarConnectionARN, configuration))));
                 var buildProject = MavenCodeBuild.createBuildProject(this, artifactBucket, projectName);
                 var testProject = MavenCodeBuild.createSystemTestProject(this, systemTestProjectName);
-                setupNotifications(testProject);
+                registerEventListener(testProject);
                 var build = createCodeBuildAction(1, "build", buildProject);
                 var systemTest = createCodeBuildAction(2, "system-test", testProject,
                                 Map.of("BASE_URI_MP_REST_URL", BuildEnvironmentVariable.builder()
@@ -61,8 +61,8 @@ public class CodepipelineStack extends Stack {
                 CfnOutput.Builder.create(this, "PipelineOutput").value(pipeline.getPipelineArn()).build();
         }
 
-        void setupNotifications(PipelineProject pipelineProject) {
-                var logGroupTarget = LogGroups.completedBuilds(this);
+        void registerEventListener(PipelineProject pipelineProject) {
+                var logGroupTarget = LogGroups.completedBuildsTarget(this);
                 pipelineProject.onPhaseChange("on-change", OnEventOptions.builder()
                                 .target(logGroupTarget)
                                 .ruleName("on-build-phase-change")
