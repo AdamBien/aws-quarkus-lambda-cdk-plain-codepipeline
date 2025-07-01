@@ -44,7 +44,7 @@ public interface ReleaseFlow {
         var first = Pass.Builder.create(scope, "ExtractProjectName")
                 .assign(Map.of(
                         "projectName", "{% $states.input.detail.`project-name` %}",
-                        "buildStartTime", "{% $states.input.detail.`build-start-time` %}"))
+                        "buildStartTime", "{% $states.input.detail.`additional-information`.`build-start-time` %}"))
                 .build();
         var second = CallAwsService.Builder.create(scope, "WriteLog")
                 .service("logs")
