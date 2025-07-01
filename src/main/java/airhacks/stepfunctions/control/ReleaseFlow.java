@@ -40,11 +40,12 @@ public interface ReleaseFlow {
     static DefinitionBody releaseFlow(Construct scope) {
         var first = Pass.Builder.create(scope, "ExtractProjectName")
                 .assign(Map.of(
-                    "projectName", "{% $state.detail.`project-name` %}",
-                    "buildStartTime","{% $state.detail.`build-start-time` %}"
-                    ))
+                        "projectName", "{% $state.detail.`project-name` %}",
+                        "buildStartTime", "{% $state.detail.`build-start-time` %}"))
                 .build();
-        var second = Pass.Builder.create(scope, "Second").build();
+        var second = Pass.Builder
+                .create(scope, "WriteLog")
+                .build();
         var chain = Chain
                 .start(first)
                 .next(second);
