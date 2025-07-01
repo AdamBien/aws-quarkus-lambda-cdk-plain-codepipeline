@@ -40,33 +40,44 @@ public interface ReleaseFlow {
         }
 
         static DefinitionBody releaseFlow(Construct scope, LogGroup successfulBuilds) {
-                var first = Pass.Builder.create(scope, "ExtractProjectName")
+                var configureVariables = Pass.Builder.create(scope, "ConfigureVariables")
                                 .assign(Map.of(
                                                 "projectName", "{% $states.input.detail.`project-name` %}",
                                                 "buildStartTime",
                                                 "{% $states.input.detail.`additional-information`.`build-start-time` %}",
                                                 "buildNumber",
-                                                "{% $states.input.detail.`additional-information`.`build-number` %}"))
+                                                "{% $states.input.detail.`additional-information`.`build-number` %}",
+                                                "logStreamName",
+                                                "{% 'release-' & $states.input.detail.`project-name` & '-' & $string($millis()) %}"))
                                 .build();
-                var logMessage = "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}";
+                var logMessage = "{% 'Project: ' & $states.input.projectName & ', Build Start: ' & $states.input.buildStartTime %}";
 
-                var second = CallAwsService.Builder.create(scope, "WriteLog")
+                var createStream = CallAwsService.Builder.create(scope, "CreateLogStream")
+                                .service("cloudwatchlogs")
+                                .action("createLogStream")
+                                .iamResources(List.of(successfulBuilds.getLogGroupArn()))
+                                .parameters(Map.of(
+                                                "LogGroupName", "/airhacks/successful-builds",
+                                                "LogStreamName", "{% $states.input.logStreamName %}"))
+                                .build();
+                var writeLog = CallAwsService.Builder.create(scope, "WriteLog")
                                 .service("cloudwatchlogs")
                                 .action("putLogEvents")
                                 .iamResources(List.of(successfulBuilds.getLogGroupArn()))
                                 .parameters(Map.of(
                                                 "LogGroupName", "/airhacks/successful-builds",
-                                                "LogStreamName", "{% 'release-' & $state.projectName %}",
+                                                "LogStreamName", "{% $states.input.logStreamName %}",
                                                 "LogEvents", List.of(
                                                                 Map.of(
-                                                                                "timestamp", "{% $millis() %}",
-                                                                                "message",
+                                                                                "Timestamp", "{% $millis() %}",
+                                                                                "Message",
                                                                                 logMessage))))
                                 .build();
 
                 var chain = Chain
-                                .start(first)
-                                .next(second);
+                                .start(configureVariables)
+                                .next(createStream)
+                                .next(writeLog);
                 return DefinitionBody.fromChainable(chain);
         }
 }
