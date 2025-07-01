@@ -8,7 +8,9 @@ import airhacks.codebuild.control.MavenCodeBuild;
 import airhacks.s3.control.ArtifactBucket;
 import airhacks.stepfunctions.control.ReleaseFlow;
 import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
+import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariableType;
 import software.amazon.awscdk.services.codebuild.IProject;
@@ -28,9 +30,10 @@ import software.constructs.Construct;
 public class CodepipelineStack extends Stack {
         static Artifact SOURCE_OUTPUT = Artifact.artifact("source");
 
-        public CodepipelineStack(Construct scope, GithubConfiguration configuration, String projectName,
+        public CodepipelineStack(Construct scope, String accountId, GithubConfiguration configuration,
+                        String projectName,
                         String codestarConnectionARN) {
-                super(scope, projectName + "-codepipeline");
+                super(scope, projectName + "-codepipeline",stackProps(accountId));
                 var systemTestProjectName = projectName + "-st";
                 var parameterStoreKey = "/lambda-under-test/BASE_URI_MP_REST_URL".replace("-", "_");
                 var artifactBucket = ArtifactBucket.create(this);
@@ -71,10 +74,10 @@ public class CodepipelineStack extends Stack {
                                 .description("completed builds")
                                 .build());
                 pipelineProject.onBuildSucceeded("on-success", OnEventOptions.builder()
-                .target(releaseFlow)
-                .ruleName("on-build-successful")
-                .description("invokes step functions after successful tests")
-                .build());
+                                .target(releaseFlow)
+                                .ruleName("on-build-successful")
+                                .description("invokes step functions after successful tests")
+                                .build());
         }
 
         StageOptions createStage(String stageName, List<? extends IAction> actions) {
@@ -111,4 +114,14 @@ public class CodepipelineStack extends Stack {
         CodeBuildAction createCodeBuildAction(int runOrder, String actionName, IProject project) {
                 return createCodeBuildAction(runOrder, actionName, project, Map.of());
         }
+
+        static StackProps stackProps(String accountId) {
+                var env = Environment.builder()
+                                .account(accountId)
+                                .build();
+                return StackProps.builder()
+                                .env(env)
+                                .build();
+        }
+
 }
