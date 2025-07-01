@@ -17,6 +17,7 @@ public class Configuration {
     public String owner = "notset";
     public String repository = "notset";
     public String branch = "notset";
+    public String accountId = "notset";
 
 
 
