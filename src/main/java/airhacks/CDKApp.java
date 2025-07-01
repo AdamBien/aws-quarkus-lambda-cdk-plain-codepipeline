@@ -23,11 +23,12 @@ public class CDKApp {
         }
         var configuration = optionalConfiguration.get();
         
-        var owner = "AdamBien";
-        var repository = "aws-quarkus-lambda-cdk-plain";
-        var branch = "main";
+        var owner = configuration.owner;
+        var repository = configuration.repository;
+        var branch = configuration.branch;
+        var accountId =configuration.accountId;
         var githubConfiguration = new GithubConfiguration(owner, repository, branch);
-        new CodepipelineStack(app, githubConfiguration,appName, configuration.codeStarConnectionARN);
+        new CodepipelineStack(app, accountId,githubConfiguration,appName, configuration.codeStarConnectionARN);
         app.synth();
     }
 }
