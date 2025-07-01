@@ -44,8 +44,10 @@ public interface ReleaseFlow {
         var first = Pass.Builder.create(scope, "ExtractProjectName")
                 .assign(Map.of(
                         "projectName", "{% $states.input.detail.`project-name` %}",
-                        "buildStartTime", "{% $states.input.detail.`additional-information`.`build-start-time` %}"))
+                        "buildStartTime", "{% $states.input.detail.`additional-information`.`build-start-time` %}",
+                        "buildNumber","{% $states.input.detail.`additional-information`.`build-number` %}"))
                 .build();
+        var logMessage = "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}";
         var second = CallAwsService.Builder.create(scope, "WriteLog")
                 .service("logs")
                 .action("putLogEvents")
@@ -55,7 +57,7 @@ public interface ReleaseFlow {
                         "logEvents", Map.of(
                                 "timestamp", "{% $millis() %}",
                                 "message",
-                                "{% 'Project: ' & $state.projectName & ', Build Start: ' & $state.buildStartTime %}")))
+                                logMessage)))
                 .build();
 
         var chain = Chain
