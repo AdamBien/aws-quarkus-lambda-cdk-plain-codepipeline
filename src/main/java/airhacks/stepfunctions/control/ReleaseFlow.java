@@ -53,7 +53,7 @@ public interface ReleaseFlow {
                 var second = CallAwsService.Builder.create(scope, "WriteLog")
                                 .service("cloudwatchlogs")
                                 .action("putLogEvents")
-                                .iamResources(List.of("arn:aws:logs:*:*:log-group:/airhacks/successful-builds:*"))
+                                .iamResources(List.of(successfulBuilds.getLogGroupArn()))
                                 .parameters(Map.of(
                                                 "LogGroupName", "/airhacks/successful-builds",
                                                 "LogStreamName", "{% 'release-' & $state.projectName %}",
