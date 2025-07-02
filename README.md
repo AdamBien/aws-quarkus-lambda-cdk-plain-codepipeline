@@ -15,12 +15,15 @@ Key features:
 
 ## Setup
 
-Create `configuration.json` file at the same level as `pom.xml` with the codestart connection ARN.
+Create `configuration.json` file at the same level as `pom.xml` with the following information:
 
 ```json
 {
-    "codeStarConnectionARN": "arn:aws:codestar-connections:[YOUR_AWS_REGION]:[YOUR_AWS_ACCOUNT_ID]:connection/[CONNECTION_ID]"
+    "codeStarConnectionARN": "arn:aws:codestar-connections:[YOUR_AWS_REGION]:[YOUR_AWS_ACCOUNT_ID]:connection/[CONNECTION_ID]",
+    "branch":"--github branch name---",
+    "owner":"--github user / owner--",
+    "repository":"--name of the repository--",
+    "accountId":"--name of the AWS account--"
 }
-
 ```
 
