@@ -8,6 +8,9 @@ Key features:
 - Java application support with Maven build system
 - Integration with AWS CodeStar connections for source control
 - CloudFormation templates for infrastructure as code
+- Automated release flow orchestration with Step Functions
+- AWS Step Functions SDK integration integration with CloudWatch logs
+- Event-driven architecture with EventBridge
 
 
 ## Setup
